@@ -1,6 +1,6 @@
 import os
 import dotenv
-import asyncio
+# import asyncio
 import funcs
 from emoji import emojize
 from aiogram import Bot, types
@@ -28,16 +28,22 @@ class UserState(StatesGroup):
 # start division____________________________________________________________
 @dp.message_handler(lambda msg: not msg.text[0] == '/' or msg.text == '/start')
 async def start_conversation(msg: types.Message):
+    await msg.answer("""Welcome to the Self Storage service!
+Seasonal items that take up a lot of space in the apartment are not always convenient to store.
+In many cases, there is no place in the apartment for them.
+It also happens that things get boring, accumulate and take up all the space, interfering with life, \
+but it's a pity to get rid of them.
+Renting a small warehouse will solve your problem.""")
     status = await sync_to_async(funcs.identify_user)(msg.from_user.username)
     if status == 'owner':
         await msg.answer(
-            f'hello owner, please add to the field "chat_id for Bot" in admin {msg.from_user.id}\n for continue type /next')
+            f'hello owner, please add to the field "chat_id for Bot" in admin {msg.from_user.id}\n '
+            f'for continue type /next')
         await msg.answer(f'glad to see you {emojize(":eyes:")}')
     elif type(status) is int:
         await msg.answer(f'hi {msg.from_user.first_name} you have {status} orders')
     else:
         await msg.answer(f'Hello dear {msg.from_user.first_name},\nsorry, but you are not registered')
-        await msg.answer('some .................\ncool..................\npromotion')
         await msg.answer('Wanna join? type /registration')
 
 
