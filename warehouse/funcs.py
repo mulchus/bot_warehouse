@@ -1,3 +1,4 @@
+import datetime
 import os
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'warehouse.settings')
@@ -8,6 +9,10 @@ django.setup()
 # os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 from admin_warehouse.models import Client, Storage, Order, Owner
 from email_validate import validate
+
+
+def get_expired_orders():
+    return Order.objects.filter(date_closed__lte=datetime.date.today()).exclude(is_expired=True)
 
 
 def identify_user(tg_account: str):
@@ -28,3 +33,7 @@ def registration_client(tg_account, chat_id, mail):
 
 def check_mail(txt):
     return validate(txt)
+
+
+def get_available_storages():
+    return [storage for storage in Storage.objects.all() if storage.free_space() > 0]
