@@ -22,13 +22,11 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 today = datetime.date.today()
 
+
 class UserState(StatesGroup):
     mail = State()
     phone = State()
     storage = State()
-
-
-
 
 
 # start division____________________________________________________________
@@ -45,6 +43,8 @@ async def start_conversation(msg: types.Message):
         await msg.answer(f'Hello dear {msg.from_user.first_name},\nsorry, but you are not registered')
         await msg.answer('some .................\ncool..................\npromotion')
         await msg.answer('Wanna join? type /registration')
+
+
 # end start division___________________________________________________________________________________
 # client div____________________________________________________________________________________________
 @dp.message_handler(commands=['registration'])
@@ -54,9 +54,13 @@ async def propose_registration(msg: types.Message):
     await bot.send_document(chat_id=chat_id, document=open('permitted.pdf', 'rb'))
     await msg.answer('if you agree, type /accept')
     await msg.answer('if you dont agree, type /cancel')
+
+
 @dp.message_handler(commands=['cancel'])
 async def cancel_registration(msg: types.Message):
     await msg.answer('Take care')
+
+
 @dp.message_handler(commands=['accept'])
 async def accept_registration(msg: types.Message):
     client = await sync_to_async(funcs.identify_user)(msg.from_user.username)
@@ -65,6 +69,8 @@ async def accept_registration(msg: types.Message):
         await UserState.mail.set()
     else:
         await msg.answer('You are registered')
+
+
 @dp.message_handler(lambda msg: not msg.text[0] == '/', state=UserState.mail)
 async def registrate_client(msg: types.Message, state: FSMContext):
     chat_id = msg.from_user.id
@@ -74,47 +80,77 @@ async def registrate_client(msg: types.Message, state: FSMContext):
     await bot.send_message(owner_id, f'new client has been registered,\nchat_id: {chat_id}\ntg_account: {tg_account}')
     await msg.answer('You have been registered\n for list storages type /storages')
     await state.finish()
+
+
 @dp.message_handler(lambda msg: msg.text[0] == '/', state=UserState.mail)
 async def catch_invalid_eail(msg: types.Message):
     await msg.answer('Incorrect email, repeat input')
+
+
 @dp.message_handler(commands=['storages'])
 async def output_list_sorages(msg: types.Message):
     storages = await sync_to_async(funcs.get_available_storages)()
     for storage in storages:
-        await msg.answer(f'№ storage: {storage.id}\naddress storage: {storage.address}\navailable area: {await sync_to_async(storage.free_space)()}\n===========')
+        await msg.answer(
+            f'№ storage: {storage.id}\naddress storage: {storage.address}\navailable area: {await sync_to_async(storage.free_space)()}\n===========')
     await msg.answer('for make new order type № of storage\nfor cancel type /cancel')
     await UserState.storage.set()
-@dp.message_handler(lambda msg: msg.text[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], state=UserState.storage)
+
+
+@dp.message_handler(lambda msg: msg.text[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+                    state=UserState.storage)
 async def choose_storage(msg: types.Message, state: FSMContext):
     await msg.answer('all is good')
     await state.finish()
-@dp.message_handler(lambda msg: msg.text[0] not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'], state=UserState.storage)
+
+
+@dp.message_handler(lambda msg: msg.text[0] not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+                    state=UserState.storage)
 async def catch_invalid_storage(msg: types.Message):
     await msg.answer('Incorrect №, repeat input')
 
 
-# async def p():
-#
-#     await asyncio.sleep(3)
-#     print('5')
+async def p():
+    await asyncio.sleep(3)
+    print('5')
 
-def sentinel():
+
+async def sentinel():
     while 1:
-        time.sleep(3)
-        orders = (funcs.get_expired_orders)()
-        i=0
+        await asyncio.sleep(10)
+        orders = await sync_to_async(funcs.get_expired_orders)()
+        print(orders)
         for order in orders:
-            async_to_sync(bot.send_message)(owner_id,
-                                f'expired order:==')
-            i+=1
-        # await bot.send_message(1054649215, 'ghghjg')
-        #                         f'expired order: {order},\nclient: {order.client}\nstorage: {order.storage}\n'
-        #                         f'expired days: {sync_to_async((order.date_closed-today).days)}\n===========')
-async def onst(_):
-    asyncio.create_task(sync_to_async(sentinel)())
+            print(order)
+            await bot.send_message(order['chat_id'],
+                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
+                                   f'expired days: {order["expired days"]}\n===========')
+            await bot.send_message(owner_id,
+                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
+                                   f'expired days: {order["expired days"]}\n===========')
+
+async def sentinel3():
+    while 1:
+        await asyncio.sleep(7)
+        orders = await sync_to_async(funcs.get_terms_orders3)()
+        print(3333333)
+        for order in orders:
+            print(3)
+            await bot.send_message(order['chat_id'],
+                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
+                                   f'expired days: {order["expired days"]}\n===========')
+            await bot.send_message(owner_id,
+                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
+                                   f'expired days: {order["expired days"]}\n===========')
+
+
+
+async def on_startup(_):
+    asyncio.gather(sentinel(), sentinel3())
+
 
 def repeat(coro, loop):
-    asyncio.ensure_future(coro(),loop=loop)
+    asyncio.ensure_future(coro(), loop=loop)
     loop.call_later(5, repeat, coro, loop)
 
 
@@ -123,4 +159,4 @@ def repeat(coro, loop):
 # loop.call_later(5, repeat, sentinel, loop)
 # asyncio.set_event_loop(loop)
 # loop.run_until_complete(p())
-executor.start_polling(dp, skip_updates=False, on_startup=onst)
+executor.start_polling(dp, skip_updates=False, on_startup=on_startup)
