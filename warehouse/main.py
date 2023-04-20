@@ -44,10 +44,20 @@ Renting a small warehouse will solve your problem.""")
             f'for continue type /next')
         await msg.answer(f'glad to see you {emojize(":eyes:")}')
     elif type(status) is int:
-        await msg.answer(f'hi {msg.from_user.first_name} you have {status} orders')
+        await msg.answer(f'hi {msg.from_user.first_name} you have {status} orders\n for new order type /cost')
     else:
-        await msg.answer(f'Hello dear {msg.from_user.first_name},\nsorry, but you are not registered')
-        await msg.answer('Wanna join? type /registration')
+        await msg.answer(f'Hello dear {msg.from_user.first_name},\nbelow you can see FAQ for terms of using our service')
+        await msg.answer('Here wee have to input FAQ\nHere wee have to input FAQ\nHere wee have to input FAQ\nHere wee have to input FAQ\n')
+        await msg.answer('for calculate cost type /cost')
+
+@dp.message_handler(commands=['cost'])
+async def choose_weight(msg: types.Message):
+    await msg.answer('choose weight(kg):\n/0_10\n/10_25\n/25_40\n/40_70\n/70_100\n/100_')
+
+
+@dp.message_handler(commands=['0_10', '10_25', '25_40', '40_70', '70_100', '100_'])
+async def get_weigt_component_price(msg: types.Message):
+    await msg.answer('koeff')
 
 
 # end start division___________________________________________________________________________________

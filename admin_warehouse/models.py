@@ -58,6 +58,19 @@ class Order(models.Model):
             return f'No_client_{self.id}'
 
 
+class Cost(models.Model):
+    metr_1_3 = models.FloatField('cost  0 <= sq < 3')
+    metr_3_7 = models.FloatField('cost 3 <= sq < 7')
+    metr_7_10 = models.FloatField('cost 7 <= sq < 10')
+    metr_10 = models.FloatField('cost sq>= 10')
+    mass_0_10 = models.FloatField('cost 0 <= m < 10')
+    mass_10_25 = models.FloatField('cost 10 <= m < 25')
+    mass_25_40 = models.FloatField('cost 25 <= m < 40')
+    mass_40_70 = models.FloatField('cost 40 <= m < 70')
+    mass_70_100 = models.FloatField('cost 70 <= m < 100')
+    mass_100 = models.FloatField('cost m >= 100')
+
+
 @receiver(post_save, sender=Order)
 def order_changed(sender, instance, **kwargs):
     """ client have cleared area"""
