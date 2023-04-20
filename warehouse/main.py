@@ -24,7 +24,7 @@ dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
 today = datetime.date.today()
 
-previous_markup = None
+previous_markup = []
 
 
 class UserState(StatesGroup):
@@ -73,18 +73,76 @@ async def get_weigt_component_price(msg: types.Message):
 async def callback_inline(call: types.CallbackQuery):
     global previous_markup
     await call.message.delete()
-    previous_markup = 'client_start_markup'
+    previous_markup.append('client_start_markup')
     await call.message.answer('Storage conditions... Blah blah blah ....', reply_markup=m.exit_markup)
+    await call.answer()
+
+
+@dp.callback_query_handler(text='put_things')
+async def callback_inline(call: types.CallbackQuery):
+    global previous_markup
+    await call.message.delete()
+    previous_markup.append('client_start_markup')
+    await call.message.answer('Put things in storage', reply_markup=m.client_put_markup)
+    await call.answer()
+
+
+@dp.callback_query_handler(text='boxes')
+async def callback_inline(call: types.CallbackQuery):
+    global previous_markup
+    await call.message.delete()
+    previous_markup.append('client_start_markup')
+    await call.message.answer('My boxes: ... \n1.....\n2......\n3.......', reply_markup=m.exit_markup)
+    # здесь поместить запрос к БД на отображение списка ячеек хранения с нумерацией
+    await call.answer()
+
+
+@dp.callback_query_handler(text='receiving_addresses')
+async def callback_inline(call: types.CallbackQuery):
+    global previous_markup
+    await call.message.delete()
+    previous_markup.append('client_put_markup')
+    await call.message.answer('Addresses of receiving items: ... \n1....\n2.....\n3......',
+                              reply_markup=m.exit_markup)
+    # здесь поместить запрос к БД на отображение списка адресов хранения
+    await call.answer()
+
+
+@dp.callback_query_handler(text='free_shipping')
+async def callback_inline(call: types.CallbackQuery):
+    global previous_markup
+    await call.message.delete()
+    previous_markup.append('client_put_markup')
+    await call.message.answer('Order free shipping', reply_markup=m.client_things_info_markup)
+    # здесь установить признак "Вариант 1"
+    await call.answer()
+
+
+@dp.callback_query_handler(text='bring_myself')
+async def callback_inline(call: types.CallbackQuery):
+    global previous_markup
+    await call.message.delete()
+    previous_markup.append('client_put_markup')
+    await call.message.answer('I\'ll bring it myself', reply_markup=m.client_things_info_markup)
+    # здесь установить признак "Вариант 2"
     await call.answer()
 
 
 @dp.callback_query_handler(text="exit")
 async def callback_inline(call: types.CallbackQuery):
     await call.message.delete()
-    if previous_markup == 'client_start_markup':
+    if previous_markup[-1] == 'client_start_markup':
+        previous_markup.pop()
         await call.message.answer('Main menu', reply_markup=m.client_start_markup)
-    # if previous_markup == 'sdfsdf_markup':
-    #     await call.message.answer
+    elif previous_markup[-1] == 'client_put_markup':
+        previous_markup.pop()
+        await call.message.answer('Put things in storage', reply_markup=m.client_put_markup)
+    elif previous_markup[-1] == 'client_things_info_markup':
+        previous_markup.pop()
+        await call.message.answer('Put things in storage', reply_markup=m.client_things_info_markup)
+    # elif previous_markup[-1] == '':
+    #     previous_markup.pop()
+    #     await call.message.answer('', reply_markup=m.)
     await call.answer()
 
 
