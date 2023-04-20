@@ -2,7 +2,6 @@ import os
 import dotenv
 import datetime
 import asyncio
-import time
 import funcs
 from emoji import emojize
 from aiogram import Bot, types, Dispatcher
@@ -10,7 +9,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
-from asgiref.sync import sync_to_async, async_to_sync
+from asgiref.sync import sync_to_async
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -116,30 +115,6 @@ async def choose_storage(msg: types.Message, state: FSMContext):
 async def catch_invalid_storage(msg: types.Message):
     await msg.answer('Incorrect №, repeat input')
 
-'''
-async def sentinel():
-    while 1:
-        orders30, orders14, orders3, orders = await sync_to_async(funcs.get_terms_orders)()
-        for order in orders30:
-            print('ggg\n', orders30)
-            await bot.send_message(order['chat_id'], f'{-order["expired days"]} days till expired your order {order["order"]}')
-        for order in orders14:
-            print('ggg\n', orders14)
-            await bot.send_message(order['chat_id'], f'{-order["expired days"]}days till expired your order {order["order"]}')
-        for order in orders3:
-            print('ggg\n', orders3)
-            await bot.send_message(order['chat_id'], f'{-order["expired days"]} days till expired your order {order["order"]}')
-        for order in orders:
-            print('ggg\n', orders)
-            await bot.send_message(order['chat_id'],
-                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
-                                   f'expired days: {order["expired days"]}\n===========')
-            await bot.send_message(owner_id,
-                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
-                                   f'expired days: {order["expired days"]}\n===========')
-
-        await asyncio.sleep(86400)
-'''
 
 async def sentinel():
     while 1:

@@ -6,7 +6,6 @@ import django
 
 django.setup()
 
-# os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 from admin_warehouse.models import Client, Storage, Order, Owner
 from email_validate import validate
 
