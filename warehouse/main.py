@@ -116,44 +116,50 @@ async def choose_storage(msg: types.Message, state: FSMContext):
 async def catch_invalid_storage(msg: types.Message):
     await msg.answer('Incorrect №, repeat input')
 
+'''
+async def sentinel():
+    while 1:
+        orders30, orders14, orders3, orders = await sync_to_async(funcs.get_terms_orders)()
+        for order in orders30:
+            print('ggg\n', orders30)
+            await bot.send_message(order['chat_id'], f'{-order["expired days"]} days till expired your order {order["order"]}')
+        for order in orders14:
+            print('ggg\n', orders14)
+            await bot.send_message(order['chat_id'], f'{-order["expired days"]}days till expired your order {order["order"]}')
+        for order in orders3:
+            print('ggg\n', orders3)
+            await bot.send_message(order['chat_id'], f'{-order["expired days"]} days till expired your order {order["order"]}')
+        for order in orders:
+            print('ggg\n', orders)
+            await bot.send_message(order['chat_id'],
+                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
+                                   f'expired days: {order["expired days"]}\n===========')
+            await bot.send_message(owner_id,
+                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
+                                   f'expired days: {order["expired days"]}\n===========')
 
-async def p():
-    await asyncio.sleep(3)
-    print('5')
-
+        await asyncio.sleep(86400)
+'''
 
 async def sentinel():
     while 1:
-        await asyncio.sleep(10)
-        orders = await sync_to_async(funcs.get_expired_orders)()
-        print(orders)
-        for order in orders:
-            print(order)
+        whole_orders = await sync_to_async(funcs.get_terms_orders)()
+        for orders in whole_orders[:-1]:
+            for order in orders:
+                await bot.send_message(order['chat_id'],
+                                       f'{-order["expired days"]} days till expired your order {order["order"]}')
+        for order in whole_orders[-1]:
             await bot.send_message(order['chat_id'],
                                    f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
                                    f'expired days: {order["expired days"]}\n===========')
             await bot.send_message(owner_id,
                                    f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
                                    f'expired days: {order["expired days"]}\n===========')
-
-
-async def sentinel3():
-    while 1:
         await asyncio.sleep(7)
-        orders = await sync_to_async(funcs.get_terms_orders3)()
-        print(3333333)
-        for order in orders:
-            print(3)
-            await bot.send_message(order['chat_id'],
-                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
-                                   f'expired days: {order["expired days"]}\n===========')
-            await bot.send_message(owner_id,
-                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
-                                   f'expired days: {order["expired days"]}\n===========')
 
 
 async def on_startup(_):
-    asyncio.gather(sentinel(), sentinel3())
+    asyncio.create_task(sentinel())
 
 
 executor.start_polling(dp, skip_updates=False, on_startup=on_startup)
