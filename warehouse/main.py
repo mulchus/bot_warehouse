@@ -130,7 +130,7 @@ async def sentinel():
             await bot.send_message(owner_id,
                                    f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
                                    f'expired days: {order["expired days"]}\n===========')
-        await asyncio.sleep(7)
+        await asyncio.sleep(86400)
 
 
 async def on_startup(_):
