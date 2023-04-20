@@ -3,8 +3,10 @@ import dotenv
 import datetime
 import asyncio
 import funcs
+import markups as m
 from emoji import emojize
-from aiogram import Bot, types, Dispatcher
+import logging
+from aiogram import Bot, Dispatcher, types
 from aiogram.dispatcher import FSMContext
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -19,7 +21,10 @@ owner_id = os.environ['OWNER_ID']
 bot = Bot(token=token)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+logging.basicConfig(level=logging.INFO)
 today = datetime.date.today()
+
+previous_markup = None
 
 
 class UserState(StatesGroup):
@@ -44,15 +49,35 @@ Renting a small warehouse will solve your problem.""")
             f'for continue type /next')
         await msg.answer(f'glad to see you {emojize(":eyes:")}')
     elif type(status) is int:
-        await msg.answer(f'hi {msg.from_user.first_name} you have {status} orders')
-    else:
-        await msg.answer(f'Hello dear {msg.from_user.first_name},\nsorry, but you are not registered')
-        await msg.answer('Wanna join? type /registration')
+        await msg.answer(f'Hi, {msg.from_user.first_name}. You have {status} orders.')
+        await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    # else:
+    #     await msg.answer(f'Hello dear {msg.from_user.first_name},\nsorry, but you are not registered')
+    #     await msg.answer('Wanna join? type /registration')
 
 
 # end start division___________________________________________________________________________________
 
 # client div____________________________________________________________________________________________
+@dp.callback_query_handler(text='faq')
+async def callback_inline(call: types.CallbackQuery):
+    global previous_markup
+    await call.message.delete()
+    previous_markup = 'client_start_markup'
+    await call.message.answer('Storage conditions... Blah blah blah ....', reply_markup=m.exit_markup)
+    await call.answer()
+
+
+@dp.callback_query_handler(text="exit")
+async def callback_inline(call: types.CallbackQuery):
+    await call.message.delete()
+    if previous_markup == 'client_start_markup':
+        await call.message.answer('Main menu', reply_markup=m.client_start_markup)
+    # if previous_markup == 'sdfsdf_markup':
+    #     await call.message.answer
+    await call.answer()
+
+
 @dp.message_handler(commands=['registration'])
 async def propose_registration(msg: types.Message):
     chat_id = msg.from_user.id
