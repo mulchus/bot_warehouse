@@ -10,6 +10,64 @@ client_start_markup_buttons = [
     ]
 client_start_markup.add(*client_start_markup_buttons)
 
+choose_weight = types.InlineKeyboardMarkup(row_width=1)
+choose_weight_buttons = [
+    types.InlineKeyboardButton('0-10 kg', callback_data='mass_0_10'),
+    types.InlineKeyboardButton('10-25 kg', callback_data='mass_10_25'),
+    types.InlineKeyboardButton('25-40 kg', callback_data='mass_25_40'),
+    types.InlineKeyboardButton('40-70 kg', callback_data='mass_40_70'),
+    types.InlineKeyboardButton('70-100 kg', callback_data='mass_70_100'),
+    types.InlineKeyboardButton('100+ kg', callback_data='mass_100'),
+    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    ]
+choose_weight.add(*choose_weight_buttons)
+
+choose_square = types.InlineKeyboardMarkup(row_width=1)
+choose_square_buttons = [
+    types.InlineKeyboardButton('0-3 sq.m', callback_data='metr_0_3'),
+    types.InlineKeyboardButton('3-7 sq.m', callback_data='metr_3_7'),
+    types.InlineKeyboardButton('7-10 sq.m', callback_data='metr_7_10'),
+    types.InlineKeyboardButton('10+ sq.m', callback_data='metr_10'),
+    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    ]
+choose_square.add(*choose_square_buttons)
+
+
+choose_delivery = types.InlineKeyboardMarkup(row_width=1)
+choose_delivery_buttons = [
+    types.InlineKeyboardButton('our delivery', callback_data='delivery_yes'),
+    types.InlineKeyboardButton('your delivery', callback_data='delivery_no'),
+    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    ]
+choose_delivery.add(*choose_delivery_buttons)
+
+make_order = types.InlineKeyboardMarkup(row_width=1)
+make_order_buttons = [
+    types.InlineKeyboardButton('make order', callback_data='order_yes'),
+    types.InlineKeyboardButton('no, thanks', callback_data='order_no'),
+    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    ]
+make_order.add(*make_order_buttons)
+
+
+accept_personal_data = types.InlineKeyboardMarkup(row_width=1)
+accept_personal_data_buttons = [
+    types.InlineKeyboardButton('Accept', callback_data='personal_yes'),
+    types.InlineKeyboardButton('Decline', callback_data='personal_no'),
+    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    ]
+accept_personal_data.add(*accept_personal_data_buttons)
+
+
+manage_order = types.InlineKeyboardMarkup(row_width=1)
+manage_order_buttons = [
+    types.InlineKeyboardButton('Get access', callback_data='access_order'),
+    types.InlineKeyboardButton('Close order', callback_data='close_order'),
+    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    ]
+manage_order.add(*manage_order_buttons)
+
+
 exit_markup = types.InlineKeyboardMarkup(row_width=1)
 exit_markup_btn = types.InlineKeyboardButton('Exit', callback_data='exit')
 exit_markup.add(exit_markup_btn)

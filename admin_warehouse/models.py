@@ -44,9 +44,9 @@ class Storage(models.Model):
 class Order(models.Model):
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, verbose_name='client', related_name='orders',
                                null=True)
-    storage = models.ForeignKey(Storage, on_delete=models.SET_NULL, verbose_name='storage', related_name='orders',
-                                null=True, blank=True)
-    area = models.FloatField('whole area of storage')
+    area = models.CharField('range of area for rents', max_length=200, null=True, blank=True)
+    mass = models.CharField('range of mass for rents', max_length=200, null=True, blank=True)
+    amount = models.FloatField('cost of order', null=True, blank=True)
     date_opened = models.DateField(verbose_name='date of opening the order', null=True, blank=True)
     date_closed = models.DateField(verbose_name='date of closing the order', null=True, blank=True)
     is_expired = models.BooleanField(verbose_name='area was cleared', null=True, blank=True)
@@ -59,7 +59,7 @@ class Order(models.Model):
 
 
 class Cost(models.Model):
-    metr_1_3 = models.FloatField('cost  0 <= sq < 3')
+    metr_0_3 = models.FloatField('cost  0 <= sq < 3')
     metr_3_7 = models.FloatField('cost 3 <= sq < 7')
     metr_7_10 = models.FloatField('cost 7 <= sq < 10')
     metr_10 = models.FloatField('cost sq>= 10')
