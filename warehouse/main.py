@@ -11,6 +11,7 @@ from aiogram.dispatcher import FSMContext
 from aiogram.utils import executor
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import StatesGroup, State
+from aiogram.dispatcher.filters import Text, Command
 from asgiref.sync import sync_to_async
 from pathlib import Path
 
@@ -24,17 +25,22 @@ dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
 today = datetime.date.today()
 
-previous_markup = []
+previous_markup = None
 
 
 class UserState(StatesGroup):
     mail = State()
     phone = State()
     storage = State()
+    mass = State()
+    sq = State()
+    period = State()
+    exit = State()
+    order = State()
 
 
 # start division____________________________________________________________
-@dp.message_handler(lambda msg: not msg.text[0] == '/' or msg.text == '/start')
+@dp.message_handler(lambda msg: msg.text[0] not in ['/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] or msg.text == '/start')
 async def start_conversation(msg: types.Message):
     await msg.answer("""Welcome to the Self Storage service!
 Seasonal items that take up a lot of space in the apartment are not always convenient to store.
@@ -47,23 +53,210 @@ Renting a small warehouse will solve your problem.""")
         await msg.answer(
             f'hello owner, please add to the field "chat_id for Bot" in admin {msg.from_user.id}\n '
             f'for continue type /next')
-        await msg.answer(f'glad to see you {emojize(":eyes:")}')
+        await msg.answer(f'glad to see you {emojize(":eyes:")}', reply_markup=m.client_start_markup)
     elif type(status) is int:
-        await msg.answer(f'Hi, {msg.from_user.first_name}. You have {status} orders.\n For new order type /cost')
+        await msg.answer(f'Hi, {msg.from_user.first_name}. You have {status} orders.')
         await msg.answer('Main menu', reply_markup=m.client_start_markup)
     else:
-        await msg.answer(f'Hello dear {msg.from_user.first_name},\nbelow you can see FAQ for terms of using our service')
-        await msg.answer('Here wee have to input FAQ\nHere wee have to input FAQ\nHere wee have to input FAQ\nHere wee have to input FAQ\n')
-        await msg.answer('for calculate cost type /cost')
-
-@dp.message_handler(commands=['cost'])
-async def choose_weight(msg: types.Message):
-    await msg.answer('choose weight(kg):\n/0_10\n/10_25\n/25_40\n/40_70\n/70_100\n/100_')
+        await msg.answer(f'Hello dear {msg.from_user.first_name}')
+        await msg.answer('Main menu', reply_markup=m.client_start_markup)
 
 
-@dp.message_handler(commands=['0_10', '10_25', '25_40', '40_70', '70_100', '100_'])
-async def get_weigt_component_price(msg: types.Message):
-    await msg.answer('koeff')
+@dp.message_handler(lambda msg: msg.text[0] not in ['/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'] or msg.text == '/start', state=UserState)
+async def start_conversation(msg: types.Message):
+    await msg.answer("""Welcome to the Self Storage service!
+Seasonal items that take up a lot of space in the apartment are not always convenient to store.
+In many cases, there is no place in the apartment for them.
+It also happens that things get boring, accumulate and take up all the space, interfering with life, \
+but it's a pity to get rid of them.
+Renting a small warehouse will solve your problem.""")
+    status = await sync_to_async(funcs.identify_user)(msg.from_user.username)
+    if status == 'owner':
+        await msg.answer(
+            f'hello owner, please add to the field "chat_id for Bot" in admin {msg.from_user.id}\n '
+            f'for continue type /next')
+        await msg.answer(f'glad to see you {emojize(":eyes:")}', reply_markup=m.client_start_markup)
+    elif type(status) is int:
+        await msg.answer(f'Hi, {msg.from_user.first_name}. You have {status} orders.')
+        await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    else:
+        await msg.answer(f'Hello dear {msg.from_user.first_name}')
+        await msg.answer('Main menu', reply_markup=m.client_start_markup)
+
+
+@dp.callback_query_handler(Text('put_things'))
+async def choose_weight(cb: types.CallbackQuery):
+    await cb.message.answer('choose weight', reply_markup=m.choose_weight)
+    await UserState.mass.set()
+    await cb.answer()
+
+@dp.callback_query_handler(Text('put_things'), state=UserState)
+async def choose_weight(cb: types.CallbackQuery):
+    await cb.message.answer('choose weight', reply_markup=m.choose_weight)
+    await UserState.mass.set()
+    await cb.answer()
+
+@dp.callback_query_handler(Text(['mass_100', 'mass_70_100', 'mass_40_70', 'mass_25_40', 'mass_10_25', 'mass_0_10']),
+                           state=UserState.mass)
+async def get_weight_component_price(cb: types.CallbackQuery, state: FSMContext):
+    for btn_data in ['mass_100', 'mass_70_100', 'mass_40_70', 'mass_25_40', 'mass_10_25', 'mass_0_10']:
+        if cb.data == btn_data:
+            data = await sync_to_async(funcs.get_cost_field)(cb.data)
+            await state.update_data(mass=btn_data, mass_cfn=data)
+            break
+    data = await state.get_data()
+    await cb.message.answer(f"coefficient to price {data['mass_cfn']}")
+    await UserState.sq.set()
+    await cb.message.answer('choose square', reply_markup=m.choose_square)
+    await cb.answer()
+
+
+@dp.callback_query_handler(Text(['metr_10', 'metr_7_10', 'metr_3_7', 'metr_0_3']), state=UserState.sq)
+async def get_square_component_price(cb: types.CallbackQuery, state: FSMContext):
+    for btn_data in ['metr_10', 'metr_7_10', 'metr_3_7', 'metr_0_3']:
+        if cb.data == btn_data:
+            data = await sync_to_async(funcs.get_cost_field)(cb.data)
+            await state.update_data(sq=btn_data, sq_cfn=data)
+            break
+    data = await state.get_data()
+    await cb.message.answer(f"cost for 1 day rent: {data['sq']}")
+    await UserState.period.set()
+    await cb.message.answer("input rent's period in days", reply_markup=m.exit_markup)
+    await cb.answer()
+
+
+@dp.message_handler(lambda msg: msg.text[0] in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+                    state=UserState)
+async def get_period_component_price(msg: types.Message, state: FSMContext):
+    data = int(msg.text)
+    await state.update_data(period=data)
+    data = await state.get_data()
+    await msg.answer(f"your price is: {data['period'] * data['mass_cfn'] * data['sq_cfn']} RUR",
+                     reply_markup=m.choose_delivery)
+
+
+@dp.callback_query_handler(Text(['delivery_yes', 'delivery_no']), state=UserState)
+async def choose_delivery_method(cb: types.CallbackQuery):
+    if cb.data == 'delivery_yes':
+        await cb.message.answer('for delivery details call: +7-777-777-77-77')
+        await cb.message.answer('you can make order', reply_markup=m.make_order)
+    else:
+        await cb.message.answer('you can make order', reply_markup=m.make_order)
+    await cb.answer()
+
+
+@dp.callback_query_handler(Text(['order_yes', 'order_no']), state=UserState)
+async def choice_make_order(cb: types.CallbackQuery, state: FSMContext):
+    if cb.data == 'order_no':
+        await cb.message.answer('we were glad to see you', reply_markup=m.exit_markup)
+    else:
+        status = await sync_to_async(funcs.identify_user)(cb.from_user.username)
+        if status == 'owner':
+            await cb.message.answer(f'it was funny {emojize(":eyes:")}')
+        elif type(status) is int:
+            data = await state.get_data()
+            amount = data["mass_cfn"] * data["sq_cfn"] * data["period"]
+            tg_account = cb.from_user.username
+            await cb.message.answer(f'Specs your order:\nmass: {data["mass"]}\nsquare: {data["sq"]}\nperiod: '
+                                    f'{data["period"]}\nuser:{cb.from_user.username}')
+            await sync_to_async(funcs.make_order)(mass=data["mass"], sq=data["sq"], period=data["period"],
+                                                  amount=amount, tg_account=tg_account)
+            await cb.message.answer(f'Your order has been registered\nfor pay: {amount}')
+            await bot.send_message(owner_id, f'new order has been registered,\namount: {amount}\nclient: {tg_account}')
+            await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
+            await state.finish()
+        else:
+            chat_id = cb.from_user.id
+            await cb.message.answer('before making order you need get registration')
+            await cb.message.answer('for registration please read document about personal data')
+            await bot.send_document(chat_id=chat_id, document=open('permitted.pdf', 'rb'),
+                                    reply_markup=m.accept_personal_data)
+            await cb.answer()
+
+
+@dp.callback_query_handler(Text(['personal_yes', 'personal_no']), state=UserState)
+async def make_order(cb: types.CallbackQuery):
+    if cb.data == 'personal_no':
+        await cb.message.answer('we were glad to see you', reply_markup=m.exit_markup)
+    else:
+        await cb.message.answer('for ending registration input your email')
+        await cb.answer()
+
+
+@dp.message_handler(state=UserState)
+async def registrate_client(msg: types.Message, state: FSMContext):
+    chat_id = msg.from_user.id
+    tg_account = msg.from_user.username
+    mail = msg.text
+    data = await state.get_data()
+    amount = data["mass_cfn"] * data["sq_cfn"] * data["period"]
+    await sync_to_async(funcs.registration_client)(tg_account, chat_id, mail)
+    await bot.send_message(owner_id, f'new client has been registered,\nchat_id: {chat_id}\ntg_account: {tg_account}')
+    await msg.answer('You have been registered')
+    await sync_to_async(funcs.make_order)(mass=data["mass"], sq=data["sq"], period=data["period"], amount=amount,
+                                          tg_account=tg_account)
+    await bot.send_message(owner_id, f'new order has been registered,\namount: {amount}\nclient: {tg_account}')
+    await msg.answer(f'Your order has been registered\nfor pay: {amount}')
+    await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    await state.finish()
+
+
+@dp.callback_query_handler(Text(['boxes']), state=UserState)
+async def make_order(cb: types.CallbackQuery):
+    orders = await sync_to_async(funcs.get_orders)(cb.from_user.username)
+    orders_markup = types.InlineKeyboardMarkup(row_width=1)
+    orders_btn = []
+    for order in orders:
+        orders_btn.append(types.InlineKeyboardButton(f'id: {order["id"]}_cost: {order["amount"]}',
+                                                     callback_data=f'/{order["id"]}'))
+    orders_btn.append(types.InlineKeyboardButton('Exit', callback_data='exit'))
+    orders_markup.add(*orders_btn)
+    await cb.message.answer(f'choose order {orders[0]["id"]}', reply_markup=orders_markup)
+    await cb.answer()
+    await UserState.order.set()
+
+
+@dp.callback_query_handler(Text(['boxes']))
+async def make_order(cb: types.CallbackQuery):
+    orders = await sync_to_async(funcs.get_orders)(cb.from_user.username)
+    orders_markup = types.InlineKeyboardMarkup(row_width=1)
+    orders_btn = []
+    for order in orders:
+        orders_btn.append(types.InlineKeyboardButton(f'id: {order["id"]}_cost: {order["amount"]}',
+                                                     callback_data=f'/{order["id"]}'))
+    orders_btn.append(types.InlineKeyboardButton('Exit', callback_data='exit'))
+    orders_markup.add(*orders_btn)
+    await cb.message.answer(f'choose order {orders[0]["id"]}', reply_markup=orders_markup)
+    await cb.answer()
+    await UserState.order.set()
+
+
+@dp.callback_query_handler(lambda cb: cb.data[0] == '/', state=UserState)
+async def make_order(cb: types.CallbackQuery, state: FSMContext):
+    orders = await sync_to_async(funcs.get_orders)(cb.from_user.username)
+    await state.update_data(id=int(cb.data[1:]))
+    for order in orders:
+        if order['id'] == cb.data[1:]:
+            order = order
+            break
+    for key in order:
+        await cb.message.answer(f'{key}: {order[key]}')
+    await cb.message.answer('what you wanna do?', reply_markup=m.manage_order)
+
+
+@dp.callback_query_handler(Text(['access_order', 'close_order']), state=UserState)
+async def make_order(cb: types.CallbackQuery, state: FSMContext):
+    if cb.data == 'access_order':
+        await cb.message.answer('get your pin for access calling by phone:\n+7-777-777-77-77')
+        await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
+    else:
+        data = await state.get_data()
+        await sync_to_async(funcs.delete_order)(data['id'])
+        await cb.message.answer(f'your order with id: {data["id"]} has closed')
+        await bot.send_message(owner_id, f'order client: {cb.from_user.username} with id: {data["id"]} has closed')
+        await state.finish()
+        await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
+        await cb.answer()
 
 
 # end start division___________________________________________________________________________________
@@ -73,77 +266,42 @@ async def get_weigt_component_price(msg: types.Message):
 async def callback_inline(call: types.CallbackQuery):
     global previous_markup
     await call.message.delete()
-    previous_markup.append('client_start_markup')
+    previous_markup = 'client_start_markup'
     await call.message.answer('Storage conditions... Blah blah blah ....', reply_markup=m.exit_markup)
     await call.answer()
 
 
-@dp.callback_query_handler(text='put_things')
+@dp.callback_query_handler(text='faq', state=UserState)
 async def callback_inline(call: types.CallbackQuery):
     global previous_markup
     await call.message.delete()
-    previous_markup.append('client_start_markup')
-    await call.message.answer('Put things in storage', reply_markup=m.client_put_markup)
+    previous_markup = 'client_start_markup'
+    await call.message.answer('Storage conditions... Blah blah blah ....', reply_markup=m.exit_markup)
     await call.answer()
 
 
-@dp.callback_query_handler(text='boxes')
-async def callback_inline(call: types.CallbackQuery):
-    global previous_markup
+@dp.callback_query_handler(text="exit", state=UserState)
+async def callback_inline(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
-    previous_markup.append('client_start_markup')
-    await call.message.answer('My boxes: ... \n1.....\n2......\n3.......', reply_markup=m.exit_markup)
-    # здесь поместить запрос к БД на отображение списка ячеек хранения с нумерацией
+    # if previous_markup == 'client_start_markup':
+    await call.message.answer('Main menu', reply_markup=m.client_start_markup)
+    # if previous_markup == 'sdfsdf_markup':
+    #     await call.message.answer
+    await call.message.answer('type anything for restart')
     await call.answer()
-
-
-@dp.callback_query_handler(text='receiving_addresses')
-async def callback_inline(call: types.CallbackQuery):
-    global previous_markup
-    await call.message.delete()
-    previous_markup.append('client_put_markup')
-    await call.message.answer('Addresses of receiving items: ... \n1....\n2.....\n3......',
-                              reply_markup=m.exit_markup)
-    # здесь поместить запрос к БД на отображение списка адресов хранения
-    await call.answer()
-
-
-@dp.callback_query_handler(text='free_shipping')
-async def callback_inline(call: types.CallbackQuery):
-    global previous_markup
-    await call.message.delete()
-    previous_markup.append('client_put_markup')
-    await call.message.answer('Order free shipping', reply_markup=m.client_things_info_markup)
-    # здесь установить признак "Вариант 1"
-    await call.answer()
-
-
-@dp.callback_query_handler(text='bring_myself')
-async def callback_inline(call: types.CallbackQuery):
-    global previous_markup
-    await call.message.delete()
-    previous_markup.append('client_put_markup')
-    await call.message.answer('I\'ll bring it myself', reply_markup=m.client_things_info_markup)
-    # здесь установить признак "Вариант 2"
-    await call.answer()
+    await state.finish()
 
 
 @dp.callback_query_handler(text="exit")
-async def callback_inline(call: types.CallbackQuery):
+async def callback_inline(call: types.CallbackQuery, state: FSMContext):
     await call.message.delete()
-    if previous_markup[-1] == 'client_start_markup':
-        previous_markup.pop()
-        await call.message.answer('Main menu', reply_markup=m.client_start_markup)
-    elif previous_markup[-1] == 'client_put_markup':
-        previous_markup.pop()
-        await call.message.answer('Put things in storage', reply_markup=m.client_put_markup)
-    elif previous_markup[-1] == 'client_things_info_markup':
-        previous_markup.pop()
-        await call.message.answer('Put things in storage', reply_markup=m.client_things_info_markup)
-    # elif previous_markup[-1] == '':
-    #     previous_markup.pop()
-    #     await call.message.answer('', reply_markup=m.)
+    # if previous_markup == 'client_start_markup':
+    await call.message.answer('Main menu', reply_markup=m.client_start_markup)
+    # if previous_markup == 'sdfsdf_markup':
+    #     await call.message.answer
+    await call.message.answer('type anything for restart')
     await call.answer()
+    await state.finish()
 
 
 @dp.message_handler(commands=['registration'])
@@ -217,11 +375,10 @@ async def sentinel():
                 await bot.send_message(order['chat_id'],
                                        f'{-order["expired days"]} days till expired your order {order["order"]}')
         for order in whole_orders[-1]:
-            await bot.send_message(order['chat_id'],
-                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
-                                   f'expired days: {order["expired days"]}\n===========')
+            await bot.send_message(order['chat_id'], f'expired order: {order["order"]},\nexpired days: '
+                                                     f'{order["expired days"]}\n===========')
             await bot.send_message(owner_id,
-                                   f'expired order: {order["order"]},\nclient: {order["client"]}\nstorage: {order["storage"]}\n'
+                                   f'expired order: {order["order"]},\nclient: {order["client"]}\n'
                                    f'expired days: {order["expired days"]}\n===========')
         await asyncio.sleep(86400)
 
