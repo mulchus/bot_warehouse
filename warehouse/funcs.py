@@ -90,6 +90,8 @@ def delete_order(id):
     chat_id = Order.objects.get(id=id).client.chat_id
     Order.objects.get(id=id).delete()
     return chat_id
+
+
 def get_qr():
     return 'FORTUNA NON PENIS, IN MANUS NON RECIPI'
 

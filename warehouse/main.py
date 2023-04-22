@@ -23,7 +23,6 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
 
-
 previous_markup = None
 client_id = {}
 
@@ -68,7 +67,7 @@ Renting a small warehouse will solve your problem.""")
 @dp.message_handler(state=[UserState.mass, UserState.sq, UserState.standby, UserState.order, UserState.order_own,
                            UserState.order_exp])
 async def incorrect_input_proceeding(msg: types.Message):
-    if await sync_to_async(funcs.identify_user)(msg.from_user.username)=='owner':
+    if await sync_to_async(funcs.identify_user)(msg.from_user.username) == 'owner':
         await msg.answer('Main menu', reply_markup=m.owner_start_markup)
     else:
         await msg.answer('Main menu', reply_markup=m.client_start_markup)
@@ -92,13 +91,13 @@ async def faq_proceeding(cb: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text="exit", state=[UserState, None])
-async def exit_client_proceeding(cb: types.CallbackQuery, state: FSMContext):
+async def exit_client_proceeding(cb: types.CallbackQuery):
     await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
     await cb.answer()
 
 
 @dp.callback_query_handler(text='exit_owner', state='*')
-async def exit_owner_proceeding(cb: types.CallbackQuery, state: FSMContext):
+async def exit_owner_proceeding(cb: types.CallbackQuery):
     await cb.message.answer('Main menu', reply_markup=m.owner_start_markup)
     await cb.answer()
 
@@ -330,6 +329,7 @@ async def forward_message(msg: types.Message, state: FSMContext):
                            reply_markup=m.exit_markup)
     await msg.answer('exit', reply_markup=m.exit_owner)
     await state.finish()
+
 
 # ======= CLIENT BLOCK (END) ==============================================================================
 
