@@ -42,7 +42,7 @@ class Storage(models.Model):
 
 
 class Order(models.Model):
-    client = models.ForeignKey(Client, on_delete=models.SET_NULL, verbose_name='client', related_name='orders',
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, verbose_name='client', related_name='orders',
                                null=True)
     area = models.CharField('range of area for rents', max_length=200, null=True, blank=True)
     mass = models.CharField('range of mass for rents', max_length=200, null=True, blank=True)

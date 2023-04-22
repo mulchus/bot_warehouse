@@ -43,7 +43,7 @@ def identify_user(tg_account: str):
             client = Client.objects.get(tg_account=tg_account)
             return client.status()
         except Client.DoesNotExist:
-            return 'Not_reg'
+            return 'User is not registered'
 
 
 def registration_client(tg_account, chat_id, mail):
