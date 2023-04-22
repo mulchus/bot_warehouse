@@ -1,6 +1,5 @@
 import os
 import dotenv
-import datetime
 import asyncio
 import funcs
 import markups as m
@@ -23,7 +22,7 @@ bot = Bot(token=token)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
-today = datetime.date.today()
+
 
 previous_markup = None
 client_id = {}
@@ -41,6 +40,7 @@ class UserState(StatesGroup):
     client = State()
     msg = State()
     order_own = State()
+    order_exp = State()
 
 
 # ======= GREETINGS BLOCK (START) ============================================================================
@@ -65,7 +65,8 @@ Renting a small warehouse will solve your problem.""")
         await msg.answer('Main menu', reply_markup=m.client_start_markup)
 
 
-@dp.message_handler(state=[UserState.mass, UserState.sq, UserState.standby, UserState.order, UserState.order_own])
+@dp.message_handler(state=[UserState.mass, UserState.sq, UserState.standby, UserState.order, UserState.order_own,
+                           UserState.order_exp])
 async def incorrect_input_proceeding(msg: types.Message):
     if await sync_to_async(funcs.identify_user)(msg.from_user.username)=='owner':
         await msg.answer('Main menu', reply_markup=m.owner_start_markup)
@@ -377,10 +378,57 @@ async def manage_order(cb: types.CallbackQuery, state: FSMContext):
     await state.finish()
     await cb.answer()
 
+
+@dp.callback_query_handler(Text(['exp_orders']), state='*')
+async def proceed_orders(cb: types.CallbackQuery):
+    orders = await sync_to_async(funcs.get_expired_orders)()
+    if orders:
+        orders_markup = types.InlineKeyboardMarkup(row_width=1)
+        orders_btn = []
+        for order in orders:
+            orders_btn.append(types.InlineKeyboardButton(f'{order["client"]}, id: {order["id"]}, overdays: '
+                                                         f'{order["expired_days"]}',
+                                                         callback_data=f'/{order["id"]}'))
+        orders_btn.append(types.InlineKeyboardButton('Exit', callback_data='exit_owner'))
+        orders_markup.add(*orders_btn)
+        await cb.message.answer(f'choose order', reply_markup=orders_markup)
+        await UserState.order_exp.set()
+        await cb.answer()
+    else:
+        await cb.message.answer('you have not any expired orders', reply_markup=m.exit_markup)
+        await cb.answer()
+
+
+@dp.callback_query_handler(lambda cb: cb.data[0] == '/', state=UserState.order_exp)
+async def output_order_attributes(cb: types.CallbackQuery, state: FSMContext):
+    orders = await sync_to_async(funcs.get_orders)()
+    await state.update_data(id=int(cb.data[1:]))
+    for order in orders:
+        if order['id'] == cb.data[1:]:
+            order = order
+            break
+    for key in order:
+        await cb.message.answer(f'{key}: {order[key]}')
+    await cb.message.answer('what you wanna do?', reply_markup=m.manage_order_owner)
+    await cb.answer()
+
+
+@dp.callback_query_handler(Text(['close_ord']), state=UserState.order_exp)
+async def manage_order(cb: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    chat_id = await sync_to_async(funcs.delete_order)(data['id'])
+    await cb.message.answer(f'order with id: {data["id"]} has closed', reply_markup=m.exit_owner)
+    await bot.send_message(chat_id, f'your order with id: {data["id"]} has closed',
+                           reply_markup=m.exit_markup)
+    await state.finish()
+    await cb.answer()
+
+
 # ======= SENTINEL BLOCK (START) ============================================================================
 async def sentinel():
     while 1:
         whole_orders = await sync_to_async(funcs.get_terms_orders)()
+        print('0000000')
         for orders in whole_orders[:-1]:
             for order in orders:
                 await bot.send_message(order['chat_id'],

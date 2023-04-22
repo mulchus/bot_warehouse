@@ -27,7 +27,6 @@ def get_terms_orders():
                 'order': order,
                 'chat_id': order.client.chat_id,
                 'client': order.client,
-                'storage': order.storage,
                 'expired days': -(order.date_closed - datetime.date.today()).days
             }
             ord[orders_terms.index(orders)].append(expired_orderes)
