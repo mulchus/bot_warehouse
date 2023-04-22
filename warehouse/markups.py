@@ -67,15 +67,23 @@ manage_order_buttons = [
     types.InlineKeyboardButton('Exit', callback_data='exit'),
     ]
 manage_order.add(*manage_order_buttons)
+
+exit_markup = types.InlineKeyboardMarkup(row_width=1)
+exit_markup_btn = types.InlineKeyboardButton('Exit', callback_data='exit')
+exit_markup.add(exit_markup_btn)
 # ======= CLIENT BLOCK (END) ===============================================================================
 
 # ======= OWNER BLOCK (START) ===============================================================================
+exit_owner = types.InlineKeyboardMarkup(row_width=1)
+exit_owner_btn = types.InlineKeyboardButton('Exit', callback_data='exit_owner')
+exit_owner.add(exit_owner_btn)
+
 owner_start_markup = types.InlineKeyboardMarkup(row_width=2)
 owner_start_markup_buttons = [
     types.InlineKeyboardButton('Clients', callback_data='clients'),
     types.InlineKeyboardButton('Orders', callback_data='orders'),
     types.InlineKeyboardButton('Expired orders', callback_data='exp_orders'),
-    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    types.InlineKeyboardButton('Exit', callback_data='exit_owner'),
     ]
 owner_start_markup.add(*owner_start_markup_buttons)
 
@@ -86,7 +94,7 @@ owner_reply_message = types.InlineKeyboardMarkup(row_width=1).add(types.InlineKe
 exit_markup = types.InlineKeyboardMarkup(row_width=1)
 exit_markup_btn = types.InlineKeyboardButton('Exit', callback_data='exit')
 exit_markup.add(exit_markup_btn)
-# ======= EXIT BLOCK (START) ================================================================================
+# ======= EXIT BLOCK (END) ================================================================================
 # далее пока все из другого бота - для образца
 menu_markup = types.InlineKeyboardMarkup(row_width=2)
 menu_markup_fb = types.InlineKeyboardButton('Запрещенные сообщения', callback_data='forbidden_message')

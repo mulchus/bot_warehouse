@@ -56,7 +56,7 @@ Renting a small warehouse will solve your problem.""")
         await msg.answer(
             f'hello owner, please add to the field "chat_id for Bot" in admin {msg.from_user.id}\n '
             f'for continue type /next')
-        await msg.answer(f'glad to see you {emojize(":eyes:")}', reply_markup=m.client_start_markup)
+        await msg.answer(f'glad to see you {emojize(":eyes:")}', reply_markup=m.owner_start_markup)
     elif type(status) is int:
         await msg.answer(f'Hi, {msg.from_user.first_name}. You have {status} orders.')
         await msg.answer('Main menu', reply_markup=m.client_start_markup)
@@ -76,7 +76,7 @@ async def incorrect_input_proceeding(msg: types.Message):
     await msg.answer('Main menu', reply_markup=m.client_start_markup)
 
 
-@dp.callback_query_handler(text='faq', state=[UserState, None])
+@dp.callback_query_handler(text='faq', state='*')
 async def faq_proceeding(cb: types.CallbackQuery):
     global previous_markup
     previous_markup = 'client_start_markup'
@@ -85,10 +85,14 @@ async def faq_proceeding(cb: types.CallbackQuery):
 
 
 @dp.callback_query_handler(text="exit", state=[UserState, None])
-async def exit_proceeding(cb: types.CallbackQuery, state: FSMContext):
+async def exit_client_proceeding(cb: types.CallbackQuery, state: FSMContext):
     await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
-    await cb.message.answer('type anything for restart')
-    await state.finish()
+    await cb.answer()
+
+
+@dp.callback_query_handler(text='exit_owner', state='*')
+async def exit_owner_proceeding(cb: types.CallbackQuery, state: FSMContext):
+    await cb.message.answer('Main menu', reply_markup=m.owner_start_markup)
     await cb.answer()
 
 
@@ -112,7 +116,7 @@ async def get_weight_component_price(cb: types.CallbackQuery, state: FSMContext)
             await state.update_data(mass=btn_data, mass_cfn=data)
             break
     data = await state.get_data()
-    await cb.message.answer(f"coefficient to price {data}")
+    await cb.message.answer(f"coefficient to price {data['mass_cfn']}")
     await UserState.sq.set()
     await cb.message.answer('choose square', reply_markup=m.choose_square)
     await cb.answer()
@@ -126,7 +130,7 @@ async def get_square_component_price(cb: types.CallbackQuery, state: FSMContext)
             await state.update_data(sq=btn_data, sq_cfn=data)
             break
     data = await state.get_data()
-    await cb.message.answer(f"cost for 1 day rent: {data['sq']}")
+    await cb.message.answer(f"cost for 1 day rent: {data['sq_cfn']}")
     await UserState.period.set()
     await cb.message.answer("input rent's period in days", reply_markup=m.exit_markup)
     await cb.answer()
@@ -161,7 +165,7 @@ async def choose_make_order(cb: types.CallbackQuery, state: FSMContext):
     else:
         status = await sync_to_async(funcs.identify_user)(cb.from_user.username)
         if status == 'owner':
-            await cb.message.answer(f'it was funny {emojize(":eyes:")}', reply_markup=m.client_start_markup)
+            await cb.message.answer(f'it was funny {emojize(":eyes:")}', reply_markup=m.exit_owner)
         elif type(status) is int:
             data = await state.get_data()
             amount = data["mass_cfn"] * data["sq_cfn"] * data["period"]
@@ -170,9 +174,8 @@ async def choose_make_order(cb: types.CallbackQuery, state: FSMContext):
                                     f'{data["period"]}\nuser:{cb.from_user.username}')
             await sync_to_async(funcs.make_order)(mass=data["mass"], sq=data["sq"], period=data["period"],
                                                   amount=amount, tg_account=tg_account)
-            await cb.message.answer(f'Your order has been registered\nfor pay: {amount}')
+            await cb.message.answer(f'Your order has been registered\nfor pay: {amount}', reply_markup=m.exit_markup)
             await bot.send_message(owner_id, f'new order has been registered,\namount: {amount}\nclient: {tg_account}')
-            await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
             await state.finish()
             await cb.answer()
         else:
@@ -203,13 +206,14 @@ async def registrate_new_client(msg: types.Message, state: FSMContext):
     data = await state.get_data()
     amount = data["mass_cfn"] * data["sq_cfn"] * data["period"]
     await sync_to_async(funcs.registration_client)(tg_account, chat_id, mail)
-    await bot.send_message(owner_id, f'new client has been registered,\nchat_id: {chat_id}\ntg_account: {tg_account}')
-    await msg.answer('You have been registered')
+    await bot.send_message(owner_id, f'new client has been registered,\nchat_id: {chat_id}\ntg_account: {tg_account}',
+                           reply_markup=m.exit_owner)
+    await msg.answer('You have been registered', reply_markup=m.exit_markup)
     await sync_to_async(funcs.make_order)(mass=data["mass"], sq=data["sq"], period=data["period"], amount=amount,
                                           tg_account=tg_account)
-    await bot.send_message(owner_id, f'new order has been registered,\namount: {amount}\nclient: {tg_account}')
-    await msg.answer(f'Your order has been registered\nfor pay: {amount}')
-    await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    await bot.send_message(owner_id, f'new order has been registered,\namount: {amount}\nclient: {tg_account}',
+                           reply_markup=m.exit_owner)
+    await msg.answer(f'Your order has been registered\nfor pay: {amount}', reply_markup=m.exit_markup)
     await state.finish()
 
 
@@ -217,10 +221,10 @@ async def registrate_new_client(msg: types.Message, state: FSMContext):
 async def create_existing_orders(cb: types.CallbackQuery):
     status = await sync_to_async(funcs.identify_user)(cb.from_user.username)
     if status == 'owner':
-        await cb.message.answer(f'it was funny {emojize(":eyes:")}', reply_markup=m.client_start_markup)
+        await cb.message.answer(f'it was funny {emojize(":eyes:")}', reply_markup=m.exit_owner)
         await cb.answer()
     elif status == 'User is not registered':
-        await cb.message.answer('Sorry, you are not registered')
+        await cb.message.answer('Sorry, you are not registered', reply_markup=m.exit_markup)
         await cb.answer()
     else:
         orders = await sync_to_async(funcs.get_orders)(cb.from_user.username)
@@ -236,7 +240,7 @@ async def create_existing_orders(cb: types.CallbackQuery):
             await UserState.order.set()
             await cb.answer()
         else:
-            await cb.message.answer('you have not any orders')
+            await cb.message.answer('you have not any orders', reply_markup=m.exit_markup)
             await cb.answer()
 
 
@@ -258,17 +262,19 @@ async def output_order_attributes(cb: types.CallbackQuery, state: FSMContext):
 async def manage_order(cb: types.CallbackQuery, state: FSMContext):
     if cb.data == 'access_order':
         client_id[cb.from_user.username] = cb.from_user.id
+        await bot.send_message(owner_id, 'exit', reply_markup=m.exit_owner)
         await bot.send_message(owner_id, f'client {cb.from_user.username} wanna get access to warehouse, send QR',
                                reply_markup=m.owner_send_qr)
-        await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
+        await cb.message.answer('exit', reply_markup=m.exit_markup)
+        await cb.message.answer('you will get QR, when owner reply')
         await cb.answer()
     else:
         data = await state.get_data()
         await sync_to_async(funcs.delete_order)(data['id'])
-        await cb.message.answer(f'your order with id: {data["id"]} has closed')
-        await bot.send_message(owner_id, f'order client: {cb.from_user.username} with id: {data["id"]} has closed')
+        await cb.message.answer(f'your order with id: {data["id"]} has closed', reply_markup=m.exit_markup)
+        await bot.send_message(owner_id, f'order client: {cb.from_user.username} with id: {data["id"]} has closed',
+                               reply_markup=m.exit_owner)
         await state.finish()
-        await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
         await cb.answer()
 
 
@@ -276,13 +282,16 @@ async def manage_order(cb: types.CallbackQuery, state: FSMContext):
 async def send_qr(cb: types.CallbackQuery):
     qr = await sync_to_async(funcs.get_qr)()
     cl_id = client_id[cb.message.text.split()[1]]
+    await bot.send_message(cl_id, 'exit', reply_markup=m.exit_markup)
     await bot.send_message(cl_id, f' your QR: {qr}')
+    await cb.message.answer('Main menu', reply_markup=m.owner_start_markup)
     await cb.answer()
 
 
 @dp.callback_query_handler(Text(['msg']), state='*')
 async def message_for_owner(cb: types.CallbackQuery):
     await UserState.client.set()
+    await cb.message.answer('exit', reply_markup=m.exit_markup)
     await cb.message.answer('input your message')
     await cb.answer()
 
@@ -290,16 +299,18 @@ async def message_for_owner(cb: types.CallbackQuery):
 @dp.message_handler(state=UserState.client)
 async def proceed_message(msg: types.Message, state: FSMContext):
     client_id[msg.from_user.username] = msg.from_user.id
+    await bot.send_message(owner_id, 'exit', reply_markup=m.exit_owner)
     await bot.send_message(owner_id, f'message from {msg.from_user.username}:\n{msg.text}',
                            reply_markup=m.owner_reply_message)
+    await msg.answer('exit', reply_markup=m.exit_markup)
     await state.finish()
 
 
 @dp.callback_query_handler(Text(['reply']), state='*')
 async def reply(cb: types.CallbackQuery, state: FSMContext):
     cl_id = client_id[cb.message.text.split()[2][:-1]]
+    await cb.message.answer('exit', reply_markup=m.exit_owner)
     await bot.send_message(owner_id, f'input your reply for {cb.message.text.split()[2]}')
-    await  cb.message.answer('Main menu', reply_markup=m.client_start_markup)
     await UserState.msg.set()
     await state.update_data(client_id=cl_id)
     await cb.answer()
@@ -308,8 +319,9 @@ async def reply(cb: types.CallbackQuery, state: FSMContext):
 @dp.message_handler(state=UserState.msg)
 async def forward_message(msg: types.Message, state: FSMContext):
     cl_id = await state.get_data()
-    await bot.send_message(cl_id['client_id'], f'message from {msg.from_user.username}:\n{msg.text}')
-    await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    await bot.send_message(cl_id['client_id'], f'message from {msg.from_user.username}:\n{msg.text}',
+                           reply_markup=m.exit_markup)
+    await msg.answer('exit', reply_markup=m.exit_owner)
     await state.finish()
 
 
