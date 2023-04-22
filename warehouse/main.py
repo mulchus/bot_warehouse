@@ -40,6 +40,7 @@ class UserState(StatesGroup):
     order = State()
     client = State()
     msg = State()
+    order_own = State()
 
 
 # ======= GREETINGS BLOCK (START) ============================================================================
@@ -54,8 +55,7 @@ Renting a small warehouse will solve your problem.""")
     status = await sync_to_async(funcs.identify_user)(msg.from_user.username)
     if status == 'owner':
         await msg.answer(
-            f'hello owner, please add to the field "chat_id for Bot" in admin {msg.from_user.id}\n '
-            f'for continue type /next')
+            f'hello owner, please add to the field "chat_id for Bot" in admin {msg.from_user.id}\n')
         await msg.answer(f'glad to see you {emojize(":eyes:")}', reply_markup=m.owner_start_markup)
     elif type(status) is int:
         await msg.answer(f'Hi, {msg.from_user.first_name}. You have {status} orders.')
@@ -65,15 +65,21 @@ Renting a small warehouse will solve your problem.""")
         await msg.answer('Main menu', reply_markup=m.client_start_markup)
 
 
-@dp.message_handler(state=[UserState.mass, UserState.sq, UserState.standby, UserState.order])
+@dp.message_handler(state=[UserState.mass, UserState.sq, UserState.standby, UserState.order, UserState.order_own])
 async def incorrect_input_proceeding(msg: types.Message):
-    await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    if await sync_to_async(funcs.identify_user)(msg.from_user.username)=='owner':
+        await msg.answer('Main menu', reply_markup=m.owner_start_markup)
+    else:
+        await msg.answer('Main menu', reply_markup=m.client_start_markup)
 
 
 @dp.message_handler(lambda msg: msg.text[0] not in ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
                     state=[UserState.period])
 async def incorrect_input_proceeding(msg: types.Message):
-    await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    if await sync_to_async(funcs.identify_user)(msg.from_user.username) == 'owner':
+        await msg.answer('Main menu', reply_markup=m.owner_start_markup)
+    else:
+        await msg.answer('Main menu', reply_markup=m.client_start_markup)
 
 
 @dp.callback_query_handler(text='faq', state='*')
@@ -227,16 +233,16 @@ async def create_existing_orders(cb: types.CallbackQuery):
         await cb.message.answer('Sorry, you are not registered', reply_markup=m.exit_markup)
         await cb.answer()
     else:
-        orders = await sync_to_async(funcs.get_orders)(cb.from_user.username)
+        orders = await sync_to_async(funcs.get_client_orders)(cb.from_user.username)
         if orders:
             orders_markup = types.InlineKeyboardMarkup(row_width=1)
             orders_btn = []
             for order in orders:
-                orders_btn.append(types.InlineKeyboardButton(f'id: {order["id"]}_cost: {order["amount"]}',
+                orders_btn.append(types.InlineKeyboardButton(f'id: {order["id"]} cost: {order["amount"]}',
                                                              callback_data=f'/{order["id"]}'))
             orders_btn.append(types.InlineKeyboardButton('Exit', callback_data='exit'))
             orders_markup.add(*orders_btn)
-            await cb.message.answer(f'choose order {orders[0]["id"]}', reply_markup=orders_markup)
+            await cb.message.answer(f'choose order', reply_markup=orders_markup)
             await UserState.order.set()
             await cb.answer()
         else:
@@ -324,9 +330,52 @@ async def forward_message(msg: types.Message, state: FSMContext):
     await msg.answer('exit', reply_markup=m.exit_owner)
     await state.finish()
 
-
 # ======= CLIENT BLOCK (END) ==============================================================================
 
+# ======= OWNER BLOCK (START) ==============================================================================
+@dp.callback_query_handler(Text(['orders']), state='*')
+async def proceed_orders(cb: types.CallbackQuery):
+    orders = await sync_to_async(funcs.get_orders)()
+    if orders:
+        orders_markup = types.InlineKeyboardMarkup(row_width=1)
+        orders_btn = []
+        for order in orders:
+            orders_btn.append(types.InlineKeyboardButton(f'{order["client"]}, cost: {order["amount"]}, end: '
+                                                         f'{order["date_closed"]}',
+                                                         callback_data=f'/{order["id"]}'))
+        orders_btn.append(types.InlineKeyboardButton('Exit', callback_data='exit_owner'))
+        orders_markup.add(*orders_btn)
+        await cb.message.answer(f'choose order', reply_markup=orders_markup)
+        await UserState.order_own.set()
+        await cb.answer()
+    else:
+        await cb.message.answer('you have not any orders', reply_markup=m.exit_markup)
+        await cb.answer()
+
+
+@dp.callback_query_handler(lambda cb: cb.data[0] == '/', state=UserState.order_own)
+async def output_order_attributes(cb: types.CallbackQuery, state: FSMContext):
+    orders = await sync_to_async(funcs.get_orders)()
+    await state.update_data(id=int(cb.data[1:]))
+    for order in orders:
+        if order['id'] == cb.data[1:]:
+            order = order
+            break
+    for key in order:
+        await cb.message.answer(f'{key}: {order[key]}')
+    await cb.message.answer('what you wanna do?', reply_markup=m.manage_order_owner)
+    await cb.answer()
+
+
+@dp.callback_query_handler(Text(['close_ord']), state=UserState.order_own)
+async def manage_order(cb: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    chat_id = await sync_to_async(funcs.delete_order)(data['id'])
+    await cb.message.answer(f'order with id: {data["id"]} has closed', reply_markup=m.exit_owner)
+    await bot.send_message(chat_id, f'your order with id: {data["id"]} has closed',
+                           reply_markup=m.exit_markup)
+    await state.finish()
+    await cb.answer()
 
 # ======= SENTINEL BLOCK (START) ============================================================================
 async def sentinel():

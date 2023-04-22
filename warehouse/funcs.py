@@ -75,7 +75,7 @@ def make_order(mass=None, sq=None, period=None, amount=None, tg_account=None):
                          date_closed=date_closed, amount=amount)
 
 
-def get_orders(tg_account):
+def get_client_orders(tg_account):
     client = Client.objects.get(tg_account=tg_account)
     orders = Order.objects.filter(client=client)
     serialized_orders = []
@@ -88,7 +88,30 @@ def get_orders(tg_account):
 
 
 def delete_order(id):
+    chat_id = Order.objects.get(id=id).client.chat_id
     Order.objects.get(id=id).delete()
-
+    return chat_id
 def get_qr():
     return 'FORTUNA NON PENIS, IN MANUS NON RECIPI'
+
+
+def get_orders():
+    orders = Order.objects.all()
+    serialized_orders = []
+    for order in orders:
+        serialized_order = dict(client=order.client, area=order.area, mass=order.mass,
+                                amount=order.amount, date_opened=order.date_opened, date_closed=order.date_closed,
+                                id=order.id)
+        serialized_orders.append(serialized_order)
+    return serialized_orders
+
+
+def get_expired_orders():
+    orders = Order.objects.filter(date_closed__lt=datetime.date.today()).exclude(is_expired=True)
+    serialized_orders = []
+    for order in orders:
+        serialized_order = dict(client=order.client, area=order.area, mass=order.mass,
+                                amount=order.amount, date_opened=order.date_opened, date_closed=order.date_closed,
+                                id=order.id, expired_days=-(order.date_closed - datetime.date.today()).days)
+        serialized_orders.append(serialized_order)
+    return serialized_orders
