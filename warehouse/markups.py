@@ -1,6 +1,6 @@
 from aiogram import types
 
-
+# ======= CLIENT BLOCK (START) ==============================================================================
 client_start_markup = types.InlineKeyboardMarkup(row_width=2)
 client_start_markup_buttons = [
     types.InlineKeyboardButton('Storage conditions (FAQ)', callback_data='faq'),
@@ -66,12 +66,25 @@ manage_order_buttons = [
     types.InlineKeyboardButton('Exit', callback_data='exit'),
     ]
 manage_order.add(*manage_order_buttons)
+# ======= CLIENT BLOCK (END) ===============================================================================
+
+# ======= OWNER BLOCK (START) ===============================================================================
+owner_start_markup = types.InlineKeyboardMarkup(row_width=2)
+owner_start_markup_buttons = [
+    types.InlineKeyboardButton('Clients', callback_data='clients'),
+    types.InlineKeyboardButton('Orders', callback_data='orders'),
+    types.InlineKeyboardButton('Expired orders', callback_data='exp_orders'),
+    types.InlineKeyboardButton('Create QR', callback_data='qr'),
+    types.InlineKeyboardButton('Exit', callback_data='exit'),
+    ]
+owner_start_markup.add(*owner_start_markup_buttons)
 
 
+# ======= EXIT BLOCK (START) ================================================================================
 exit_markup = types.InlineKeyboardMarkup(row_width=1)
 exit_markup_btn = types.InlineKeyboardButton('Exit', callback_data='exit')
 exit_markup.add(exit_markup_btn)
-
+# ======= EXIT BLOCK (START) ================================================================================
 # далее пока все из другого бота - для образца
 menu_markup = types.InlineKeyboardMarkup(row_width=2)
 menu_markup_fb = types.InlineKeyboardButton('Запрещенные сообщения', callback_data='forbidden_message')
