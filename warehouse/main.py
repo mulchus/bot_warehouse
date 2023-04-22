@@ -26,6 +26,7 @@ logging.basicConfig(level=logging.INFO)
 today = datetime.date.today()
 
 previous_markup = None
+client_id = {}
 
 
 class UserState(StatesGroup):
@@ -37,6 +38,8 @@ class UserState(StatesGroup):
     period = State()
     exit = State()
     order = State()
+    client = State()
+    msg = State()
 
 
 # ======= GREETINGS BLOCK (START) ============================================================================
@@ -214,7 +217,7 @@ async def registrate_new_client(msg: types.Message, state: FSMContext):
 async def create_existing_orders(cb: types.CallbackQuery):
     status = await sync_to_async(funcs.identify_user)(cb.from_user.username)
     if status == 'owner':
-        await cb.message.answer(f'it was funny {emojize(":eyes:")}',reply_markup=m.client_start_markup)
+        await cb.message.answer(f'it was funny {emojize(":eyes:")}', reply_markup=m.client_start_markup)
         await cb.answer()
     elif status == 'User is not registered':
         await cb.message.answer('Sorry, you are not registered')
@@ -237,7 +240,6 @@ async def create_existing_orders(cb: types.CallbackQuery):
             await cb.answer()
 
 
-
 @dp.callback_query_handler(lambda cb: cb.data[0] == '/', state=UserState.order)
 async def output_order_attributes(cb: types.CallbackQuery, state: FSMContext):
     orders = await sync_to_async(funcs.get_orders)(cb.from_user.username)
@@ -255,7 +257,9 @@ async def output_order_attributes(cb: types.CallbackQuery, state: FSMContext):
 @dp.callback_query_handler(Text(['access_order', 'close_order']), state=UserState.order)
 async def manage_order(cb: types.CallbackQuery, state: FSMContext):
     if cb.data == 'access_order':
-        await cb.message.answer('get your pin for access calling by phone:\n+7-777-777-77-77')
+        client_id[cb.from_user.username] = cb.from_user.id
+        await bot.send_message(owner_id, f'client {cb.from_user.username} wanna get access to warehouse, send QR',
+                               reply_markup=m.owner_send_qr)
         await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
         await cb.answer()
     else:
@@ -266,6 +270,47 @@ async def manage_order(cb: types.CallbackQuery, state: FSMContext):
         await state.finish()
         await cb.message.answer('Main menu', reply_markup=m.client_start_markup)
         await cb.answer()
+
+
+@dp.callback_query_handler(Text(['qr']), state='*')
+async def send_qr(cb: types.CallbackQuery):
+    qr = await sync_to_async(funcs.get_qr)()
+    cl_id = client_id[cb.message.text.split()[1]]
+    await bot.send_message(cl_id, f' your QR: {qr}')
+    await cb.answer()
+
+
+@dp.callback_query_handler(Text(['msg']), state='*')
+async def message_for_owner(cb: types.CallbackQuery):
+    await UserState.client.set()
+    await cb.message.answer('input your message')
+    await cb.answer()
+
+
+@dp.message_handler(state=UserState.client)
+async def proceed_message(msg: types.Message, state: FSMContext):
+    client_id[msg.from_user.username] = msg.from_user.id
+    await bot.send_message(owner_id, f'message from {msg.from_user.username}:\n{msg.text}',
+                           reply_markup=m.owner_reply_message)
+    await state.finish()
+
+
+@dp.callback_query_handler(Text(['reply']), state='*')
+async def reply(cb: types.CallbackQuery, state: FSMContext):
+    cl_id = client_id[cb.message.text.split()[2][:-1]]
+    await bot.send_message(owner_id, f'input your reply for {cb.message.text.split()[2]}')
+    await  cb.message.answer('Main menu', reply_markup=m.client_start_markup)
+    await UserState.msg.set()
+    await state.update_data(client_id=cl_id)
+    await cb.answer()
+
+
+@dp.message_handler(state=UserState.msg)
+async def forward_message(msg: types.Message, state: FSMContext):
+    cl_id = await state.get_data()
+    await bot.send_message(cl_id['client_id'], f'message from {msg.from_user.username}:\n{msg.text}')
+    await msg.answer('Main menu', reply_markup=m.client_start_markup)
+    await state.finish()
 
 
 # ======= CLIENT BLOCK (END) ==============================================================================

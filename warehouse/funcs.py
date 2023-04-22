@@ -89,3 +89,6 @@ def get_orders(tg_account):
 
 def delete_order(id):
     Order.objects.get(id=id).delete()
+
+def get_qr():
+    return 'FORTUNA NON PENIS, IN MANUS NON RECIPI'

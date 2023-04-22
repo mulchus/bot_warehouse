@@ -6,6 +6,7 @@ client_start_markup_buttons = [
     types.InlineKeyboardButton('Storage conditions (FAQ)', callback_data='faq'),
     types.InlineKeyboardButton('Put things in storage', callback_data='put_things'),
     types.InlineKeyboardButton('My boxes', callback_data='boxes'),
+    types.InlineKeyboardButton('Message for owner', callback_data='msg'),
     types.InlineKeyboardButton('Exit', callback_data='exit'),
     ]
 client_start_markup.add(*client_start_markup_buttons)
@@ -74,12 +75,13 @@ owner_start_markup_buttons = [
     types.InlineKeyboardButton('Clients', callback_data='clients'),
     types.InlineKeyboardButton('Orders', callback_data='orders'),
     types.InlineKeyboardButton('Expired orders', callback_data='exp_orders'),
-    types.InlineKeyboardButton('Create QR', callback_data='qr'),
     types.InlineKeyboardButton('Exit', callback_data='exit'),
     ]
 owner_start_markup.add(*owner_start_markup_buttons)
 
+owner_send_qr = types.InlineKeyboardMarkup(row_width=1).add(types.InlineKeyboardButton('Send QR', callback_data='qr'))
 
+owner_reply_message = types.InlineKeyboardMarkup(row_width=1).add(types.InlineKeyboardButton('Reply', callback_data='reply'))
 # ======= EXIT BLOCK (START) ================================================================================
 exit_markup = types.InlineKeyboardMarkup(row_width=1)
 exit_markup_btn = types.InlineKeyboardButton('Exit', callback_data='exit')
