@@ -75,7 +75,7 @@ def make_order(mass=None, sq=None, period=None, amount=None, tg_account=None):
                          date_closed=date_closed, amount=amount)
 
 
-def get_client_orders(tg_account):
+def get_client_orders(tg_account, id_client = None):
     client = Client.objects.get(tg_account=tg_account)
     orders = Order.objects.filter(client=client)
     serialized_orders = []
@@ -85,6 +85,13 @@ def get_client_orders(tg_account):
                                 id=order.id)
         serialized_orders.append(serialized_order)
     return serialized_orders
+
+def get_order(id_order):
+    order = Order.objects.filter(id=id_order)[0]
+    serialized_order = dict(client=order.client.tg_account, area=order.area, mass=order.mass,
+                            amount=order.amount, date_opened=order.date_opened, date_closed=order.date_closed,
+                            id=order.id)
+    return serialized_order
 
 
 def get_order(id_order):

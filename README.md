@@ -22,8 +22,8 @@ https://t.me/StorageForAllBot
 Часть настроек проекта берётся из переменных окружения. Чтобы их определить, создайте файл `.env` папке venv `manage.py` и 
 запишите туда данные в таком формате: 
 ```python
-SECRET_KEY = 'django-insecure-*s_#s-4bd2s5u*@h=(9#88wt^gl!7ln-u%g_pkq^d&c2sc13df'
-DEBUG = True
+SECRET_KEY = 'secret key for Django'
+DEBUG = False
 BOT_TOKEN = 6277504232:AAGya9EHaLsRzb4CwyGot6z5NYRm1eMfXGY
 DJANGO_SETTINGS_MODULE = 'warehouse.settings'
 ```
