@@ -1,5 +1,6 @@
 import datetime
 import os
+import qrcode
 from aiogram import types
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'warehouse.settings')
@@ -86,14 +87,34 @@ def get_client_orders(tg_account):
     return serialized_orders
 
 
+def get_order(id_order):
+    order = Order.objects.filter(id=id_order)[0]
+    serialized_order = dict(client=order.client.tg_account, area=order.area, mass=order.mass,
+                            amount=order.amount, date_opened=order.date_opened, date_closed=order.date_closed,
+                            id=order.id)
+    return serialized_order
+
+
 def delete_order(id):
     chat_id = Order.objects.get(id=id).client.chat_id
     Order.objects.get(id=id).delete()
     return chat_id
 
 
-def get_qr():
-    return 'FORTUNA NON PENIS, IN MANUS NON RECIPI'
+def get_qr(qr_str):
+    # qr_image = qrcode.make(qr_str)
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=4,
+    )
+    qr.add_data(qr_str)
+    qr.make(fit=True)
+    qr_image = qr.make_image(back_color=(255, 195, 235), fill_color=(55, 95, 35))
+    # qr_image = qr.make_image(fill_color="black", back_color="white")
+    qr_image.save('last.png')
+    return qr_image
 
 
 def get_orders():
