@@ -432,6 +432,7 @@ async def manage_order(cb: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(Text(['exp_orders']), state='*')
 async def proceed_orders(cb: types.CallbackQuery):
+    await cb.message.delete()
     orders = await sync_to_async(funcs.get_expired_orders)()
     if orders:
         orders_markup = types.InlineKeyboardMarkup(row_width=1)
