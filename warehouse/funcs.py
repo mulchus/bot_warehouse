@@ -116,3 +116,18 @@ def get_expired_orders():
                                 id=order.id, expired_days=-(order.date_closed - datetime.date.today()).days)
         serialized_orders.append(serialized_order)
     return serialized_orders
+
+
+def get_clients():
+    clients = Client.objects.all()
+    serialized_clients = []
+    for client in clients:
+        serialized_client = dict(client=client.tg_account, chat_id=client.chat_id, mail=client.mail, id=client.id)
+        serialized_clients.append(serialized_client)
+    return serialized_clients
+
+
+def delete_client(id):
+    chat_id = Client.objects.get(id=id).chat_id
+    Client.objects.get(id=id).delete()
+    return chat_id
