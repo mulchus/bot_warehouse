@@ -27,8 +27,6 @@ bot = Bot(token=token)
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
-
-previous_markup = None
 client_id = {}
 owner_id = {}
 
@@ -91,8 +89,6 @@ async def incorrect_input_proceeding(msg: types.Message):
 
 @dp.callback_query_handler(text='faq', state='*')
 async def faq_proceeding(cb: types.CallbackQuery):
-    global previous_markup
-    previous_markup = 'client_start_markup'
     await cb.message.answer('https://telegra.ph/Usloviya-hraneniya-04-22', reply_markup=m.exit_markup)
     await cb.answer()
 
