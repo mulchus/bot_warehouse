@@ -29,7 +29,7 @@ dp = Dispatcher(bot, storage=storage)
 logging.basicConfig(level=logging.INFO)
 client_id = {}
 owner_id = {}
-
+qr_dic = {}
 
 class UserState(StatesGroup):
     mail = State()
@@ -281,8 +281,16 @@ async def output_order_attributes(cb: types.CallbackQuery, state: FSMContext):
 
 @dp.callback_query_handler(Text(['access_order', 'close_order']), state=UserState.order)
 async def manage_order(cb: types.CallbackQuery, state: FSMContext):
+    client_id[cb.from_user.username]=cb.from_user.id
     if cb.data == 'access_order':
-        client_id[cb.from_user.username] = cb.from_user.id
+        data = await state.get_data()
+        id_order = data['id']
+        order = await sync_to_async(funcs.get_order)(id_order)
+        qr_str = ''
+        for key in order:
+            qr_str += f' {key}: {order[key]}.'
+        qr_dic[cb.from_user.username]=qr_str
+        print(qr_dic)
         for owner_id in owners_ids:
             await bot.send_message(owner_id, 'exit', reply_markup=m.exit_owner)
             await bot.send_message(owner_id, f'client {cb.from_user.username} wanna get access to warehouse, send QR',
@@ -290,6 +298,7 @@ async def manage_order(cb: types.CallbackQuery, state: FSMContext):
         await cb.message.answer('exit', reply_markup=m.exit_markup)
         await cb.message.answer('you will get QR, when owner reply')
         await cb.answer()
+        await state.finish()
     else:
         data = await state.get_data()
         await sync_to_async(funcs.delete_order)(data['id'])
@@ -302,13 +311,16 @@ async def manage_order(cb: types.CallbackQuery, state: FSMContext):
 
 
 @dp.callback_query_handler(Text(['qr']), state='*')
-async def send_qr(cb: types.CallbackQuery):
+async def send_qr(cb: types.CallbackQuery, state:FSMContext):
+    qr_str = qr_dic[cb.message.text.split()[1]]
     qr = await sync_to_async(funcs.get_qr)()
+    print(qr_str)
     cl_id = client_id[cb.message.text.split()[1]]
     await bot.send_message(cl_id, 'exit', reply_markup=m.exit_markup)
     await bot.send_message(cl_id, f' your QR: {qr}')
     await cb.message.answer('Main menu', reply_markup=m.owner_start_markup)
     await cb.answer()
+    await state.finish()
 
 
 @dp.callback_query_handler(Text(['msg']), state='*')
