@@ -1,7 +1,4 @@
 # StorageForAll
-https://t.me/StorageForAllBot
-@StorageForAllBot
-
 Это телеграм бот для администрирования сотрудничества между заказчиками и складами
 
 ## Запуск
@@ -23,8 +20,9 @@ https://t.me/StorageForAllBot
 запишите туда данные в таком формате: 
 ```python
 SECRET_KEY = 'secret key for Django'
-DEBUG = False
-BOT_TOKEN = 6277504232:AAGya9EHaLsRzb4CwyGot6z5NYRm1eMfXGY
+DEBUG = True
+BOT_TOKEN = 1234566789:dssdfSDsdFGGSDFsdfsdfsdfSDF
+OWNERS_IDS = ID_Telegram владельца
 DJANGO_SETTINGS_MODULE = 'warehouse.settings'
 ```
 
